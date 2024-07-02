@@ -1,55 +1,96 @@
-#!/usr/bin/perl
-use strict;
-use warnings;
 
-# Input file name
-my $filename = 'input.txt';
+# Specify the path of the JSON file
+my $filename = './rda_report.json';
 
 # Open the file for reading
 open(my $fh, '<', $filename) or die "Could not open file '$filename' $!";
+
+
 
 # Arrays to store extracted seeds and testnames
 my @seeds;
 my @testnames;
 
+
+
 print "Starting to read the file...\n";  # Debug information
+
+
 
 my ($current_seed, $current_testname);
 
 while (my $line = <$fh>) {
-    # Remove newline character
-    chomp $line;
-    print "Reading line: $line\n";  # Debug information
+      # Remove newline character
+      chomp $line;
+      print "Reading line: $line\n";  # Debug information
 
-    # Extract seed
-    if ($line =~ /"seed": "(\d+)"/) {
-        $current_seed = $1;
-        print "Extracted seed: $current_seed\n";  # Debug information
-    }
 
-    # Extract testname from testcase_sim_log
-    if ($line =~ /"testcase_sim_log": ".*\/(.*)\.log"/) {
-        $current_testname = $1;
-        print "Extracted testname: $current_testname\n";  # Debug information
-    }
 
-    # If both seed and testname are found, store them in arrays
-    if (defined $current_seed && defined $current_testname) {
-        push @seeds, $current_seed;
-        push @testnames, $current_testname;
-        print "Recorded to arrays: seed = $current_seed, testname = $current_testname\n";  # Debug information
+      # Extract seed
+      if ($line =~ /"seed": "(\d+)"/) {
+              $current_seed = $1;
+              print "Extracted seed: $current_seed\n";  # Debug information
+      }
 
-        # Clear current records to process the next set of data
-        undef $current_seed;
-        undef $current_testname;
-    }
+
+
+      # Extract testname from testcase_sim_log
+      if ($line =~ /"testcase_sim_log": ".*\/(.*)\.log"/) {
+              $current_testname = $1;
+              print "Extracted testname: $current_testname\n";  # Debug information
+      }
+
+
+
+      # If both seed and testname are found, store them in arrays
+      if (defined $current_seed && defined $current_testname) {
+              push @seeds, $current_seed;
+              push @testnames, $current_testname;
+              print "Recorded to arrays: seed = $current_seed, testname = $current_testname\n";  # Debug information
+
+
+
+              # Clear current records to process the next set of data
+              undef $current_seed;
+              undef $current_testname;
+      }
 }
+
+
 
 # Close the file
 close($fh);
 
+while (scalar @seeds < scalar @testnames){
+    push @seeds, '88888888';
+}
+
+
 # Print seeds array
-print "Seeds: @seeds\n";
+print "\@seeds = (", join(", ", map{ "\"$_\""} @seeds), ");\n";
+
+
 
 # Print testnames array
-print "Testnames: @testnames\n";
+print "\@testnames = (", join(", ", map{ "\"$_\""} @testnames), ");\n";
+
+#my @seeds = (123, 456, 789); 
+#my @testnames = ('mmhub_sdp_intf_event67_perfcounter_mmhub_vm_enable', 'mmhub_sdp_intf_event68_perfcounter_mmhub_vm_enable', 'mmhub_sdp_intf_event69_perfcounter_mmhub_vm_enable'); 
+my $dj_command_base = "dj -DDEBUG -c -v -DISABLE_VRQ";
+
+# generate dj commands
+my @commands;
+for (my $i = 0; $i < @testnames; $i++) {
+    my $testname = $testnames[$i];
+    my $seed = $seeds[$i];
+    my $command = "$dj_command_base -DSEED=$seed -l ${testname}.log run_test -s mmhub::mmhub $testname";
+
+    push @commands, $command;
+}
+
+# run system cmd
+foreach my $cmd (@commands) {
+    system($cmd) and warn "Command failed: $cmd\n";
+}
+
+print "All commands have been executed.\n";
