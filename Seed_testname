@@ -1,0 +1,55 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+# Input file name
+my $filename = 'input.txt';
+
+# Open the file for reading
+open(my $fh, '<', $filename) or die "Could not open file '$filename' $!";
+
+# Arrays to store extracted seeds and testnames
+my @seeds;
+my @testnames;
+
+print "Starting to read the file...\n";  # Debug information
+
+my ($current_seed, $current_testname);
+
+while (my $line = <$fh>) {
+    # Remove newline character
+    chomp $line;
+    print "Reading line: $line\n";  # Debug information
+
+    # Extract seed
+    if ($line =~ /"seed": "(\d+)"/) {
+        $current_seed = $1;
+        print "Extracted seed: $current_seed\n";  # Debug information
+    }
+
+    # Extract testname from testcase_sim_log
+    if ($line =~ /"testcase_sim_log": ".*\/(.*)\.log"/) {
+        $current_testname = $1;
+        print "Extracted testname: $current_testname\n";  # Debug information
+    }
+
+    # If both seed and testname are found, store them in arrays
+    if (defined $current_seed && defined $current_testname) {
+        push @seeds, $current_seed;
+        push @testnames, $current_testname;
+        print "Recorded to arrays: seed = $current_seed, testname = $current_testname\n";  # Debug information
+
+        # Clear current records to process the next set of data
+        undef $current_seed;
+        undef $current_testname;
+    }
+}
+
+# Close the file
+close($fh);
+
+# Print seeds array
+print "Seeds: @seeds\n";
+
+# Print testnames array
+print "Testnames: @testnames\n";
