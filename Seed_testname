@@ -91,9 +91,19 @@ for (my $i = 0; $i < @testnames; $i++) {
     push @commands, $command;
 }
 
-# run system cmd
+
+# Run system commands and ensure the last command is executed correctly
+my $last_cmd_status = 1;
 foreach my $cmd (@commands) {
-    system($cmd) and warn "Command failed: $cmd\n";
+    print "Executing: $cmd\n";  # Debug information
+    $last_cmd_status = system($cmd);
+    if ($last_cmd_status != 0) {
+        warn "Command failed: $cmd\n";
+    }
 }
 
-print "All commands have been executed.\n";
+if ($last_cmd_status == 0) {
+    print "All commands have been executed successfully.\n";
+} else {
+    print "Some commands failed. Please check the output for details.\n";
+}
